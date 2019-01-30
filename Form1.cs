@@ -13,12 +13,14 @@ using System.ComponentModel;
 
 namespace Torrent_Sorter
 {
+
+
     public partial class Form1 : Form
     {
-        private string destinationFile;
+
 
         static System.Windows.Forms.Timer myTimer = new System.Windows.Forms.Timer();
-
+        
 
         public Form1()
         {
@@ -33,6 +35,9 @@ namespace Torrent_Sorter
         public void Regex(object sender, DoWorkEventArgs e)
 
         {
+
+            
+
             System.Threading.Thread.Sleep(1000);
             FileInfo fileInfo = (FileInfo) e.Argument;
             TextInfo myTI = new CultureInfo("en-US", false).TextInfo;
@@ -61,7 +66,7 @@ namespace Torrent_Sorter
 
        
 
-            Thread.Sleep(1000);
+            string destinationFile;
             string sourceFile = fileInfo.FullName;
             // If the result does not have title it is a movie.
             if (video_dict.ContainsKey("season") == false)
@@ -286,9 +291,11 @@ namespace Torrent_Sorter
                 //Get file size and delete if too small
                 long length = new FileInfo(file.FullName).Length;
 
-                if (length > 10000000)
+                if (length > 100000000)
                 {
+                    
                     return true;
+                    
                 }
 
                 return false;
@@ -336,11 +343,11 @@ namespace Torrent_Sorter
         {
 
                 
-             
+                processDirectory(Properties.Settings.Default.download_dir);
                 // Get all files in all dirs.
                 DirectoryInfo d = new DirectoryInfo(Properties.Settings.Default.download_dir);
                 FileInfo[] Files = d.GetFiles("*.*", SearchOption.AllDirectories);
-
+                
                 foreach (FileInfo file in Files)
                 {
                     try
@@ -348,7 +355,7 @@ namespace Torrent_Sorter
                         //Get file size and delete if too small
                         long length = new FileInfo(file.FullName).Length;
 
-                        if (length < 10000000)
+                        if (length < 100000000)
                         {
                             File.Delete(file.FullName);
                             continue;
@@ -357,8 +364,8 @@ namespace Torrent_Sorter
                     worker.DoWork += new DoWorkEventHandler(Regex);
 
                     worker.RunWorkerAsync(argument: file);
-                    Thread.Sleep(1000);
-
+                    
+                    
                     
                 }
 
@@ -368,7 +375,8 @@ namespace Torrent_Sorter
 
                     }
                 
-                processDirectory(Properties.Settings.Default.download_dir);
+                
+                
                 
 
             }
@@ -427,7 +435,10 @@ namespace Torrent_Sorter
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            myTimer.Tick += new EventHandler(SearchFiles);
 
+            // Sets the timer interval to 5 seconds.
+            myTimer.Interval = 5000;
             bool setting_missing;
             setting_missing = false;
 
@@ -445,13 +456,11 @@ namespace Torrent_Sorter
             }
 
 
+            if(setting_missing == false){
 
 
-            myTimer.Tick += new EventHandler(SearchFiles);
-
-            // Sets the timer interval to 5 seconds.
-            myTimer.Interval = 5000;
             myTimer.Start();
+                }
 
 
 
@@ -476,14 +485,7 @@ namespace Torrent_Sorter
         {
 
             // Start timer in new thread.
-            //var startTimeSpan = TimeSpan.Zero;
-            //var periodTimeSpan = TimeSpan.FromSeconds(20);
-
-            //var timer = new System.Threading.Timer((x) =>
-            //{
-
-            //    SearchFiles();
-            //}, null, startTimeSpan, periodTimeSpan);
+            myTimer.Start();
         }
 
     }
