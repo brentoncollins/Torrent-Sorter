@@ -7,18 +7,17 @@ using IronPython.Hosting;
 using Microsoft.Scripting.Hosting;
 using System.IO;
 using System.Threading;
-using System.Configuration;
 using System.Globalization;
+using UITimer = System.Windows.Forms.Timer;
+using System.ComponentModel;
 
 namespace Torrent_Sorter
 {
     public partial class Form1 : Form
     {
         private string destinationFile;
-        private DataSet ds = new DataSet();
-        private DataTable dt = new DataTable() { TableName = "torrentInfo" };
-        private System.IO.StringWriter writer = new System.IO.StringWriter();
 
+        static System.Windows.Forms.Timer myTimer = new System.Windows.Forms.Timer();
 
 
         public Form1()
@@ -31,8 +30,11 @@ namespace Torrent_Sorter
             textBox_movie_dir.Text = Properties.Settings.Default.movie_dir;
         }
 
-        public void Regex(FileInfo fileInfo)
+        public void Regex(object sender, DoWorkEventArgs e)
+
         {
+            System.Threading.Thread.Sleep(1000);
+            FileInfo fileInfo = (FileInfo) e.Argument;
             TextInfo myTI = new CultureInfo("en-US", false).TextInfo;
 
             // Run PTN and convert into a dict to work with.
@@ -40,7 +42,7 @@ namespace Torrent_Sorter
             var video_dict = new Dictionary<string, string>();
             ScriptEngine engine = Python.CreateEngine();
             string RunningPath = AppDomain.CurrentDomain.BaseDirectory;
-            ScriptSource source = engine.CreateScriptSourceFromFile(RunningPath + "\\parse.py");
+            ScriptSource source = engine.CreateScriptSourceFromFile("parse.py");
             ScriptScope scope = engine.CreateScope();
             source.Execute(scope);
 
@@ -56,15 +58,10 @@ namespace Torrent_Sorter
                 video_dict.Add(kvp.ToString(), list[kvp].ToString().TrimEnd('.'));
             }
 
-            if (dataGridView1.InvokeRequired)
-            {
-                dataGridView1.Invoke((MethodInvoker)delegate
-                {
-                    Regex(fileInfo);
-                });
-                return;
-            }
-            Thread.Sleep(3000);
+
+       
+
+            Thread.Sleep(1000);
             string sourceFile = fileInfo.FullName;
             // If the result does not have title it is a movie.
             if (video_dict.ContainsKey("season") == false)
@@ -101,7 +98,7 @@ namespace Torrent_Sorter
                 if (File.Exists(destinationFile) == true)
                 {
 
-                    
+
                     try
                     {
                         File.Delete(sourceFile);
@@ -114,26 +111,35 @@ namespace Torrent_Sorter
                     {
                         return;
                     }
-                    dataGridView1.Rows.Insert
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        dataGridView1.Rows.Insert
                 (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
                         myTI.ToTitleCase(video_dict["title"]),
                         "File Already Exists, File Removed" });
+
+                    });
                 }
 
                 else
                 {
                     File.Move(sourceFile, destinationFile);
                     Console.WriteLine("Moved File");
-                    dataGridView1.Rows.Insert
+
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        dataGridView1.Rows.Insert
                 (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
                         myTI.ToTitleCase(video_dict["title"]),
                         destinationFile });
+
+                    });
                 }
 
 
 
 
-                
+
 
             }
             // If the result has an episode it is a TV show.
@@ -188,7 +194,7 @@ namespace Torrent_Sorter
                     {
                         File.Delete(sourceFile);
                     }
-                    catch(System.IO.DirectoryNotFoundException)
+                    catch (System.IO.DirectoryNotFoundException)
                     {
                         return;
                     }
@@ -197,39 +203,44 @@ namespace Torrent_Sorter
                     {
                         return;
                     }
-                
 
+                    BeginInvoke((MethodInvoker)delegate
+                    {
                         dataGridView1.Rows.Insert
-                (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
+            (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
                         String.Format("{0} S{1}E{2}",
                         myTI.ToTitleCase(video_dict["title"]),
                         video_dict["season"],
                         video_dict["episode"]),
                         "File Already Exists, File Removed" });
-                    }
+                });
+            }
                 else
+                {
+                    File.Move(sourceFile, destinationFile);
+                    Console.WriteLine("Moved File");
+                    BeginInvoke((MethodInvoker)delegate
                     {
-                        File.Move(sourceFile, destinationFile);
-                        Console.WriteLine("Moved File");
                         dataGridView1.Rows.Insert
-                        (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
+                    (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
                         String.Format("{0} S{1}E{2}",
                         myTI.ToTitleCase(video_dict["title"]),
                         video_dict["season"],
                         video_dict["episode"]),
                         destinationFile });
-                    }
+            });
+        }
+
+
+               
 
 
 
-                
-
-                
             }
         }
 
 
-                
+
 
 
         protected virtual bool IsFileLocked(FileInfo file)
@@ -321,12 +332,11 @@ namespace Torrent_Sorter
             }
         }
 
-        public void SearchFiles()
+        public void SearchFiles(object sender, EventArgs e)
         {
 
-            while (true)
-            {
-                 Thread.Sleep(5000);
+                
+             
                 // Get all files in all dirs.
                 DirectoryInfo d = new DirectoryInfo(Properties.Settings.Default.download_dir);
                 FileInfo[] Files = d.GetFiles("*.*", SearchOption.AllDirectories);
@@ -343,22 +353,30 @@ namespace Torrent_Sorter
                             File.Delete(file.FullName);
                             continue;
                         }
+                    var worker = new BackgroundWorker();
+                    worker.DoWork += new DoWorkEventHandler(Regex);
 
-                        Regex(file);
-                    }
+                    worker.RunWorkerAsync(argument: file);
+                    Thread.Sleep(1000);
+
+                    
+                }
 
                     catch (FileNotFoundException)
                     {
                         break;
 
                     }
-                }
+                
                 processDirectory(Properties.Settings.Default.download_dir);
+                
 
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+
+
+        private void button_download_dir(object sender, EventArgs e)
         {
             using (var fbd = new FolderBrowserDialog())
             {
@@ -369,14 +387,14 @@ namespace Torrent_Sorter
                     textBox_download_dir.Text = fbd.SelectedPath.ToString();
                     Properties.Settings.Default.download_dir = fbd.SelectedPath.ToString();
                     Properties.Settings.Default.Save();
-                  
+
                 }
             }
         }
 
-        private void button1_Click_1(object sender, EventArgs e)
+        private void button_tv_dir(object sender, EventArgs e)
         {
-         
+
             using (var fbd = new FolderBrowserDialog())
             {
                 DialogResult result = fbd.ShowDialog();
@@ -391,7 +409,7 @@ namespace Torrent_Sorter
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void button_movie_dir(object sender, EventArgs e)
         {
             using (var fbd = new FolderBrowserDialog())
             {
@@ -407,60 +425,67 @@ namespace Torrent_Sorter
             }
         }
 
-
-        public static bool PropertiesHasKey(string key)
-        {
-            foreach (SettingsProperty sp in Properties.Settings.Default.Properties)
-            {
-                if (sp.Name == key)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
 
-            bool dl = PropertiesHasKey("download_dir");
-            bool tv = PropertiesHasKey("tv_dir");
-            bool mv = PropertiesHasKey("movie_dir");
+            bool setting_missing;
+            setting_missing = false;
 
-            if( dl && tv && mv)
+            if (string.IsNullOrEmpty(Properties.Settings.Default.download_dir))
             {
-                // Start timer in new thread.
-                var startTimeSpan = TimeSpan.Zero;
-                var periodTimeSpan = TimeSpan.FromSeconds(5);
-
-                var timer = new System.Threading.Timer((x) =>
-                {
-
-                    SearchFiles();
-                    
-                }, null, startTimeSpan, periodTimeSpan);
-                Console.WriteLine("Setting all there");
+                setting_missing = true;
+            }
+            if (string.IsNullOrEmpty(Properties.Settings.Default.tv_dir))
+            {
+                setting_missing = true;
+            }
+            if (string.IsNullOrEmpty(Properties.Settings.Default.movie_dir))
+            {
+                setting_missing = true;
             }
 
 
 
+
+            myTimer.Tick += new EventHandler(SearchFiles);
+
+            // Sets the timer interval to 5 seconds.
+            myTimer.Interval = 5000;
+            myTimer.Start();
+
+
+
+
         }
 
+        //new Thread(() =>
+        //{
+        //    Thread.CurrentThread.IsBackground = true;
+        //    SearchFiles();
+        //    Console.WriteLine("Hello, world");
+        //}).Start();
 
-        private void button3_Click_1(object sender, EventArgs e)
+        // Start timer in new thread.
+
+
+
+
+
+
+        private void button_start(object sender, EventArgs e)
         {
-         
+
             // Start timer in new thread.
-            var startTimeSpan = TimeSpan.Zero;
-            var periodTimeSpan = TimeSpan.FromSeconds(20);
+            //var startTimeSpan = TimeSpan.Zero;
+            //var periodTimeSpan = TimeSpan.FromSeconds(20);
 
-            var timer = new System.Threading.Timer((x) =>
-            {
+            //var timer = new System.Threading.Timer((x) =>
+            //{
 
-                SearchFiles();
-            }, null, startTimeSpan, periodTimeSpan);
+            //    SearchFiles();
+            //}, null, startTimeSpan, periodTimeSpan);
         }
-
 
     }
+    
 }

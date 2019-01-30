@@ -55,7 +55,7 @@
             this.button_choose_download_folder.TabIndex = 0;
             this.button_choose_download_folder.Text = "Folder";
             this.button_choose_download_folder.UseVisualStyleBackColor = true;
-            this.button_choose_download_folder.Click += new System.EventHandler(this.button1_Click);
+            this.button_choose_download_folder.Click += new System.EventHandler(this.button_download_dir);
             // 
             // label_choose_dir
             // 
@@ -133,7 +133,7 @@
             this.button_choose_tv_folder.TabIndex = 5;
             this.button_choose_tv_folder.Text = "Folder";
             this.button_choose_tv_folder.UseVisualStyleBackColor = true;
-            this.button_choose_tv_folder.Click += new System.EventHandler(this.button1_Click_1);
+            this.button_choose_tv_folder.Click += new System.EventHandler(this.button_tv_dir);
             // 
             // textBox_tv_dir
             // 
@@ -152,7 +152,7 @@
             this.button_choose_movie_folder.TabIndex = 8;
             this.button_choose_movie_folder.Text = "Folder";
             this.button_choose_movie_folder.UseVisualStyleBackColor = true;
-            this.button_choose_movie_folder.Click += new System.EventHandler(this.button2_Click);
+            this.button_choose_movie_folder.Click += new System.EventHandler(this.button_movie_dir);
             // 
             // label2
             // 
@@ -173,7 +173,7 @@
             this.button3.TabIndex = 10;
             this.button3.Text = "Start";
             this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click_1);
+            this.button3.Click += new System.EventHandler(this.button_start);
             // 
             // Form1
             // 
