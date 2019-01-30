@@ -128,7 +128,13 @@ namespace Torrent_Sorter
 
                 else
                 {
+                    try{
                     File.Move(sourceFile, destinationFile);
+                        }
+                    catch(System.IO.IOException)
+                    {
+                        return;
+                    }
                     Console.WriteLine("Moved File");
 
                     BeginInvoke((MethodInvoker)delegate
@@ -221,8 +227,13 @@ namespace Torrent_Sorter
                 });
             }
                 else
-                {
+                {   try{
                     File.Move(sourceFile, destinationFile);
+                        }
+                    catch(System.IO.IOException)
+                    {
+                        return;
+                    }
                     Console.WriteLine("Moved File");
                     BeginInvoke((MethodInvoker)delegate
                     {
