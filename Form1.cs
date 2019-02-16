@@ -17,8 +17,10 @@ namespace Torrent_Sorter
 
     public partial class Form1 : Form
     {
+        
+        DataTable dt = new DataTable("Files");
 
-
+        DataSet dataSet = new DataSet();
         static System.Windows.Forms.Timer myTimer = new System.Windows.Forms.Timer();
         
 
@@ -31,6 +33,60 @@ namespace Torrent_Sorter
             textBox_tv_dir.Text = Properties.Settings.Default.tv_dir;
             textBox_movie_dir.Text = Properties.Settings.Default.movie_dir;
         }
+
+        public void load_data()
+        {
+            dataGridView1.Rows.Clear();
+            string file = "data.bin";
+            using (BinaryReader bw = new BinaryReader(File.Open(file, FileMode.Open)))
+            {
+                
+                int n = bw.ReadInt32();
+                int m = bw.ReadInt32();
+                for (int i = 0; i < m; ++i)
+                {
+                    dataGridView1.Rows.Add();
+                    for (int j = 0; j < n; ++j)
+                    {
+                        if (bw.ReadBoolean())
+                        {
+                            dataGridView1.Rows[i].Cells[j].Value = bw.ReadString();
+                        }
+                        else bw.ReadBoolean();
+                    }
+                }
+            }
+        }
+        
+
+        public void save_data()
+        {
+            string file = "data.bin";
+
+            using (BinaryWriter bw = new BinaryWriter(File.Open(file, FileMode.Create)))
+            {
+                bw.Write(dataGridView1.Columns.Count);
+                bw.Write(dataGridView1.Rows.Count);
+                foreach (DataGridViewRow dgvR in dataGridView1.Rows)
+                {
+                    for (int j = 0; j < dataGridView1.Columns.Count; ++j)
+                    {
+                        object val = dgvR.Cells[j].Value;
+                        if (val == null)
+                        {
+                            bw.Write(false);
+                            bw.Write(false);
+                        }
+                        else
+                        {
+                            bw.Write(true);
+                            bw.Write(val.ToString());
+                        }
+                    }
+                }
+            }
+        }
+
 
         public void Regex(object sender, DoWorkEventArgs e)
         {
@@ -120,10 +176,17 @@ namespace Torrent_Sorter
 
                             BeginInvoke((MethodInvoker)delegate
                             {
+                                //dataGridView1.Update();
+                                //dataGridView1.Refresh();
                                 dataGridView1.Rows.Insert
-                                (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
+                                (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
                                 myTI.ToTitleCase(video_dict["title"]),
-                                "File Already Exists, File Removed" });});
+                                "File Already Exists, File Removed" });
+                            });
+
+                                // add_data(DateTime.Now.ToString("h:mm:ss tt"),
+                                //myTI.ToTitleCase(video_dict["title"]),
+                                //"File Already Exists, File Removed");
                             }
 
                             else
@@ -131,6 +194,7 @@ namespace Torrent_Sorter
                                 try
                                 {
                                     File.Move(sourceFile, destinationFile);
+                                   Thread.Sleep(1000);
                                 }
                             catch(System.IO.IOException)
                             {
@@ -138,16 +202,25 @@ namespace Torrent_Sorter
                             }       
                             BeginInvoke((MethodInvoker)delegate
                             {
+                                //dataGridView1.Update();
+                                //dataGridView1.Refresh();
                                 dataGridView1.Rows.Insert
-                                (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
+                                (0, new string[] {DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
                                 myTI.ToTitleCase(video_dict["title"]),
-                                destinationFile });});
+                                destinationFile });
+                            });
+
+                                //add_data(DateTime.Now.ToString("h:mm:ss tt"),
+                                //myTI.ToTitleCase(video_dict["title"]),
+                                //destinationFile);
+                                
                             }
                      }
 
                     // If the result has an episode it is a TV show.
                     if (video_dict.ContainsKey("episode") == true)
                     {
+                         
                         Directory.CreateDirectory
                         (String.Format("{0}\\{1}",
                         Properties.Settings.Default.tv_dir,
@@ -159,34 +232,32 @@ namespace Torrent_Sorter
                         myTI.ToTitleCase(video_dict["title"]),
                         video_dict["season"]));
 
+                        string seasonFolderNumber = video_dict["season"];
+
                         if (video_dict["episode"].Count() < 2)
                         {
                             video_dict["episode"] = string.Format("{0}{1}", 0, video_dict["episode"]);
                         }
+                        if (video_dict["season"].Count() < 2)
+                        {
+                            video_dict["season"] = string.Format("{0}{1}", 0, video_dict["season"]);
+                        }
+                       
 
-                        if (video_dict.ContainsKey("year") == true)
-                        {
-                                    destinationFile = String.Format
-                                    ("{0}\\{1}\\{2} - {3}{4}{5}",
-                                    Properties.Settings.Default.tv_dir,
-                                    myTI.ToTitleCase(video_dict["title"]),
-                                    myTI.ToTitleCase(video_dict["title"]),
-                                    video_dict["year"],
-                                    ".",
-                                    video_dict["container"]);
-                        }
-                        else
-                        {
-                                    destinationFile = String.Format
-                                    ("{0}\\{1}\\Season {2}\\{3} S{4}E{5}{6}{7}",
-                                    Properties.Settings.Default.tv_dir,
-                                    myTI.ToTitleCase(video_dict["title"]),
-                                    video_dict["season"],
-                                    myTI.ToTitleCase(video_dict["title"]),
-                                    video_dict["season"],
-                                    myTI.ToTitleCase(video_dict["episode"]),
-                                    ".", video_dict["container"]);
-                        }
+
+                    
+                        destinationFile = String.Format
+                        ("{0}\\{1}\\Season {2}\\{3} S{4}E{5}{6}{7}",
+                        Properties.Settings.Default.tv_dir,
+                        myTI.ToTitleCase(video_dict["title"]),
+                        seasonFolderNumber,
+                        myTI.ToTitleCase(video_dict["title"]),
+                        video_dict["season"],
+                        myTI.ToTitleCase(video_dict["episode"]),
+                        ".", video_dict["container"]);
+
+
+                        
 
                         if (File.Exists(destinationFile) == true)
                         {
@@ -207,19 +278,32 @@ namespace Torrent_Sorter
 
                             BeginInvoke((MethodInvoker)delegate
                             {
+                                //dataGridView1.Update();
+                                //dataGridView1.Refresh();
                                 dataGridView1.Rows.Insert
-                                (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
+                                (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
                                 String.Format("{0} S{1}E{2}",
                                 myTI.ToTitleCase(video_dict["title"]),
                                 video_dict["season"],
                                 video_dict["episode"]),
-                                "File Already Exists, File Removed" });});
+                                "File already exists, file removed" });
+
+                            });
+
+
+                                //add_data(DateTime.Now.ToString("h:mm:ss tt"),
+                                //String.Format("{0} S{1}E{2}",
+                                //myTI.ToTitleCase(video_dict["title"]),
+                                //video_dict["season"],
+                                //video_dict["episode"]),
+                                //"File Already Exists, File Removed");
                     }
                     else
                     {   
                         try{
                             File.Move(sourceFile, destinationFile);
-                                }
+                            Thread.Sleep(1000);
+                    }
                             catch(System.IO.IOException)
                             {
                                 return;
@@ -227,14 +311,25 @@ namespace Torrent_Sorter
                             Console.WriteLine("Moved File");
                             BeginInvoke((MethodInvoker)delegate
                             {
+                                //dataGridView1.Update();
+                                //dataGridView1.Refresh();
                                 dataGridView1.Rows.Insert
-                            (0, new string[] { DateTime.Now.ToString("h:mm:ss tt"),
-                                String.Format("{0} S{1}E{2}",
-                                myTI.ToTitleCase(video_dict["title"]),
-                                video_dict["season"],
-                                video_dict["episode"]),
-                                destinationFile });});
-                    }
+                               (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
+                                   String.Format("{0} S{1}E{2}",
+                                   myTI.ToTitleCase(video_dict["title"]),
+                                   video_dict["season"],
+                                   video_dict["episode"]),
+                                   destinationFile });
+                            });
+
+
+                                //add_data(DateTime.Now.ToString("h:mm:ss tt"), String.Format("{0} S{1}E{2}",
+                                //myTI.ToTitleCase(video_dict["title"]),
+                                //video_dict["season"],
+                                //video_dict["episode"]),
+                                //destinationFile);
+
+                }
 
             }
         }
@@ -253,6 +348,69 @@ namespace Torrent_Sorter
             }
         }
 
+        public void add_data(string time, string title, string destination)
+        {
+            bool tryAgain = true;
+            DataRow newRow = dt.NewRow();
+            newRow["Time"] = time;
+            newRow["Title"] = title;
+            newRow["Destination"] = destination;
+            dt.Rows.Add(newRow);
+            dataSet.Tables["Files"].AcceptChanges();
+            while (tryAgain)
+            {
+
+                
+                FileInfo fi1 = new FileInfo(@"MyData.xml");
+                bool fileLocked = IsFileLocked(fi1);
+                if (fileLocked == true)
+                {
+                    Thread.Sleep(100);
+
+                }
+                else
+                {
+                    try
+                    {
+                        
+                        dataSet.WriteXml(@"MyData.xml");
+                    }
+                    catch (System.IO.IOException)
+                    {
+                        tryAgain = false;
+                    }
+                    tryAgain = false;
+                }
+                
+            }
+
+        }
+        protected virtual bool IsFileLocked(FileInfo file)
+        {
+            FileStream stream = null;
+
+            try
+            {
+                stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+            }
+            catch (IOException)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+            finally
+            {
+                if (stream != null)
+                    stream.Close();
+            }
+
+            //file is not locked
+            return false;
+        }
+
         public void SearchFiles(object sender, EventArgs e)
         {
             // Delete empty dirs
@@ -268,7 +426,7 @@ namespace Torrent_Sorter
                 try
                     {
                     long length = new FileInfo(file.FullName).Length;
-                    if (length < 100000000)
+                    if (length < 1000000000)
                         {
                             try
                                 {
@@ -292,6 +450,9 @@ namespace Torrent_Sorter
                     }
 
             }
+
+
+            
         }
 
         private void button_download_dir(object sender, EventArgs e)
@@ -344,6 +505,30 @@ namespace Torrent_Sorter
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            //try
+            //{
+            //    dataSet.ReadXml(@"MyData.xml");
+            //}
+            //catch (System.IO.FileNotFoundException)
+            //{
+           
+            //}
+           
+
+            //dt.Clear();
+            //dt.Columns.Add("Time");
+            //dt.Columns.Add("Title");
+            //dt.Columns.Add("Destination");
+            //try
+            //{
+            //    dataSet.Tables.Add(dt);
+            //}
+            //catch (System.Data.DuplicateNameException)
+            //{
+
+            //}
+            //dataGridView1.DataSource = dataSet.Tables["Files"];
+
 
             myTimer.Tick += new EventHandler(SearchFiles);
 
