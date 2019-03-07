@@ -86,7 +86,32 @@ namespace Torrent_Sorter
                 }
             }
         }
-
+        private async void MoveFile(string sourceFile, string destinationFile)
+        {
+            try
+            {
+                using (FileStream sourceStream = File.Open(sourceFile, FileMode.Open))
+                {
+                    using (FileStream destinationStream = File.Create(destinationFile))
+                    {
+                        await sourceStream.CopyToAsync(destinationStream);
+                        if (MessageBox.Show("I made it in one piece :), would you like to delete me from the original file?", "Done", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        {
+                            sourceStream.Close();
+                            File.Delete(sourceFile);
+                        }
+                    }
+                }
+            }
+            catch (IOException ioex)
+            {
+                Console.WriteLine("An IOException occured during move, " + ioex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An Exception occured during move, " + ex.Message);
+            }
+        }
 
         public void Regex(object sender, DoWorkEventArgs e)
         {
