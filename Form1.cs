@@ -95,11 +95,10 @@ namespace Torrent_Sorter
                     using (FileStream destinationStream = File.Create(destinationFile))
                     {
                         await sourceStream.CopyToAsync(destinationStream);
-                        if (MessageBox.Show("I made it in one piece :), would you like to delete me from the original file?", "Done", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
+               
                             sourceStream.Close();
                             File.Delete(sourceFile);
-                        }
+                        
                     }
                 }
             }
@@ -218,8 +217,8 @@ namespace Torrent_Sorter
                             {
                                 try
                                 {
-                                    File.Move(sourceFile, destinationFile);
-                                   Thread.Sleep(1000);
+                                       MoveFile(sourceFile, destinationFile);
+                             
                                 }
                             catch(System.IO.IOException)
                             {
@@ -326,8 +325,8 @@ namespace Torrent_Sorter
                     else
                     {   
                         try{
-                            File.Move(sourceFile, destinationFile);
-                            Thread.Sleep(1000);
+                            MoveFile(sourceFile, destinationFile);
+                         
                     }
                             catch(System.IO.IOException)
                             {
