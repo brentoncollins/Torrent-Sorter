@@ -34,29 +34,5 @@ namespace Torrent_Sorter.Properties {
                 this["download_dir"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string movie_dir {
-            get {
-                return ((string)(this["movie_dir"]));
-            }
-            set {
-                this["movie_dir"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string tv_dir {
-            get {
-                return ((string)(this["tv_dir"]));
-            }
-            set {
-                this["tv_dir"] = value;
-            }
-        }
     }
 }
