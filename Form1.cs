@@ -13,19 +13,19 @@ using System.ComponentModel;
 
 namespace Torrent_Sorter
 {
-    
+
 
     public partial class Form1 : Form
     {
-        
+
         DataTable dt = new DataTable("Files");
 
         DataSet dataSet = new DataSet();
         static System.Windows.Forms.Timer myTimer = new System.Windows.Forms.Timer();
-     
 
 
-        
+
+
 
         public Form1()
         {
@@ -33,7 +33,7 @@ namespace Torrent_Sorter
 
             // Get the origianl dirs from settings.
             textBox_download_dir.Text = Properties.Settings.Default.download_dir;
-          
+
         }
 
         public List<DriveInfo> drive_info()
@@ -52,7 +52,7 @@ namespace Torrent_Sorter
             }
 
             return drive_information;
-        
+
 
         }
 
@@ -63,7 +63,7 @@ namespace Torrent_Sorter
             string file = "data.bin";
             using (BinaryReader bw = new BinaryReader(File.Open(file, FileMode.Open)))
             {
-                
+
                 int n = bw.ReadInt32();
                 int m = bw.ReadInt32();
                 for (int i = 0; i < m; ++i)
@@ -80,7 +80,7 @@ namespace Torrent_Sorter
                 }
             }
         }
-        
+
 
         public void save_data()
         {
@@ -120,10 +120,10 @@ namespace Torrent_Sorter
                     using (FileStream destinationStream = File.Create(destinationFile))
                     {
                         await sourceStream.CopyToAsync(destinationStream);
-               
-                            sourceStream.Close();
-                            File.Delete(sourceFile);
-                        
+
+                        sourceStream.Close();
+                        File.Delete(sourceFile);
+
                     }
                 }
             }
@@ -142,11 +142,11 @@ namespace Torrent_Sorter
             // Sleep for one second to not over work the system
             System.Threading.Thread.Sleep(1000);
             // Get the argument from e
-            FileInfo fileInfo = (FileInfo) e.Argument;
+            FileInfo fileInfo = (FileInfo)e.Argument;
             // Method for Title text
             TextInfo myTI = new CultureInfo("en-US", false).TextInfo;
             List<DriveInfo> drive_inforation = drive_info();
-            
+
 
 
             // Run PTN and convert into a dict to work with.
@@ -164,238 +164,266 @@ namespace Torrent_Sorter
 
             // Loop threw list and invoke method on first go.
             foreach (var kvp in list)
-                {
-                    video_dict.Add(kvp.ToString(), list[kvp].ToString().TrimEnd('.'));
-                }
+            {
+                video_dict.Add(kvp.ToString(), list[kvp].ToString().TrimEnd('.'));
+            }
 
             // Defone string to have safe threads
             string destinationFile;
             string sourceFile = fileInfo.FullName;
-            
+
             // Testing this to see if failed PTN with no title will skip.
             if (video_dict.ContainsKey("title") == false)
-                {
-                    return;
-                }
+            {
+                return;
+            }
             // If the parse filename does not contail the key season is must be a movie.
             if (video_dict.ContainsKey("season") == false)
-                {
+            {
                 string drive_space_letter = "F:\\";
                 // If the key year exists include this.
                 if (video_dict.ContainsKey("year"))
-                        {
-                                destinationFile = String.Format
-                                ("{0}\\{1}\\{2} - {3}{4}{5}",
-                                "Movies",
-                                myTI.ToTitleCase(video_dict["title"]),
-                                myTI.ToTitleCase(video_dict["title"]),
-                                video_dict["year"],
-                                ".",
-                                video_dict["container"]);
-                        }
-                    // else dont bother with the year. 
-                    else
-                        {
-                                    destinationFile = String.Format
-                                ("{0}\\{1}\\{2}{3}{4}",
-                                "Movies",
-                                myTI.ToTitleCase(video_dict["title"]),
-                                myTI.ToTitleCase(video_dict["title"]),
-                                ".",
-                                video_dict["container"]);
-                        }
-
-                    // Create directory for movie
-                    Directory.CreateDirectory(String.Format("{0}\\{1}\\{2}",
-                    drive_space_letter,
+                {
+                    destinationFile = String.Format
+                    ("{0}{1}\\{2}\\{3} - {4}{5}{6}",drive_space_letter,
                     "Movies",
-                    myTI.ToTitleCase(video_dict["title"])));
+                    myTI.ToTitleCase(video_dict["title"]),
+                    myTI.ToTitleCase(video_dict["title"]),
+                    video_dict["year"],
+                    ".",
+                    video_dict["container"]);
+                }
+                // else dont bother with the year. 
+                else
+                {
+                    destinationFile = String.Format
+                ("{0}{1}\\{2}\\{3}{4}{5}",drive_space_letter,
+                "Movies",
+                myTI.ToTitleCase(video_dict["title"]),
+                myTI.ToTitleCase(video_dict["title"]),
+                ".",
+                video_dict["container"]);
+                }
+
+                // Create directory for movie
+                Directory.CreateDirectory(String.Format("{0}\\{1}\\{2}",
+                drive_space_letter,
+                "Movies",
+                myTI.ToTitleCase(video_dict["title"])));
 
 
                 bool file_path = file_exists(destinationFile, drive_inforation);
 
                 if (file_path is true)
+                {
+                    try
                     {
+                        long old_file_length = new FileInfo(destinationFile).Length;
+                        long new_file_length = new FileInfo(sourceFile).Length;
+                        if (old_file_length > new_file_length)
+                        {
+                            File.Delete(sourceFile);
+                            BeginInvoke((MethodInvoker)delegate
+                            {
+
+                                dataGridView2.Rows.Insert
+                       (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
+                                        myTI.ToTitleCase(video_dict["title"]),
+                                        "File Already Exists, File Removed" });
+                            });
+                        }
+
+                        else
+                        {
                             try
                             {
-                                File.Delete(sourceFile);
-                            }
-                            catch (System.IO.DirectoryNotFoundException)
-                            {
-                                return;
+                                File.Delete(destinationFile);
+                                MoveFile(sourceFile, destinationFile);
+
                             }
                             catch (System.IO.IOException)
                             {
+                                Console.WriteLine("IO Exception Move File");
                                 return;
                             }
-
                             BeginInvoke((MethodInvoker)delegate
                             {
                                 //dataGridView2.Update();
                                 //dataGridView2.Refresh();
                                 dataGridView2.Rows.Insert
-                                (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
+                        (0, new string[] {DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
                                 myTI.ToTitleCase(video_dict["title"]),
-                                "File Already Exists, File Removed" });
+                                string.Format("Better Quality {0}{1}", drive_space_letter, destinationFile) });
                             });
+                        }
+                    }
+                    catch (System.IO.DirectoryNotFoundException)
+                    {
+                        Console.WriteLine("Could not find DIR");
+                        return;
 
-                                // add_data(DateTime.Now.ToString("h:mm:ss tt"),
-                                //myTI.ToTitleCase(video_dict["title"]),
-                                //"File Already Exists, File Removed");
-                            }
-
-                            else
-                            {
-                                try
-                                {
-                                       MoveFile(sourceFile, string.Format("{0}{1}", drive_space_letter,destinationFile));
-                             
-                                }
-                            catch(System.IO.IOException)
-                            {
-                                return;
-                            }       
-                            BeginInvoke((MethodInvoker)delegate
-                            {
-                                //dataGridView2.Update();
-                                //dataGridView2.Refresh();
-                                dataGridView2.Rows.Insert
-                                (0, new string[] {DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
+                    }
+                    catch (System.IO.IOException)
+                    {
+                        Console.WriteLine("IO Exception");
+                        return;
+                    }
+                }
+                else
+                {
+                    MoveFile(sourceFile, destinationFile);
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        //dataGridView2.Update();
+                        //dataGridView2.Refresh();
+                        dataGridView2.Rows.Insert
+                (0, new string[] {DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
                                 myTI.ToTitleCase(video_dict["title"]),
                                 string.Format("{0}{1}", drive_space_letter, destinationFile) });
-                            });
+                    });
+                }
 
-                                //add_data(DateTime.Now.ToString("h:mm:ss tt"),
-                                //myTI.ToTitleCase(video_dict["title"]),
-                                //destinationFile);
-                                
-                            }
-                     }
 
-                    // If the result has an episode it is a TV show.
-                    if (video_dict.ContainsKey("episode") == true)
 
+
+
+
+
+       
+                //add_data(DateTime.Now.ToString("h:mm:ss tt"),
+                //myTI.ToTitleCase(video_dict["title"]),
+                //destinationFile);
+            }
+
+                // If the result has an episode it is a TV show.
+                if (video_dict.ContainsKey("episode") == true)
+
+                {
+                    string drive_space_letter = "E:\\";
+
+                    Directory.CreateDirectory
+                            (String.Format("{0}\\{1}\\{2}",
+                            drive_space_letter,
+                            "TV",
+                            myTI.ToTitleCase(video_dict["title"])));
+
+                    Directory.CreateDirectory
+                    (String.Format("{0}\\{1}\\{2}\\Season {3}",
+                    drive_space_letter,
+                    "TV",
+                    myTI.ToTitleCase(video_dict["title"]),
+                    video_dict["season"]));
+
+                    string seasonFolderNumber = video_dict["season"];
+
+                    if (video_dict["episode"].Count() < 2)
                     {
-                        string drive_space_letter = "E:\\";
+                        video_dict["episode"] = string.Format("{0}{1}", 0, video_dict["episode"]);
+                    }
+                    if (video_dict["season"].Count() < 2)
+                    {
+                        video_dict["season"] = string.Format("{0}{1}", 0, video_dict["season"]);
+                    }
 
-                Directory.CreateDirectory
-                        (String.Format("{0}\\{1}\\{2}",
-                        drive_space_letter,
-                        "TV",
-                        myTI.ToTitleCase(video_dict["title"])));
 
-                        Directory.CreateDirectory
-                        (String.Format("{0}\\{1}\\{2}\\Season {3}",
-                        drive_space_letter,
-                        "TV",
-                        myTI.ToTitleCase(video_dict["title"]),
-                        video_dict["season"]));
 
-                        string seasonFolderNumber = video_dict["season"];
 
-                        if (video_dict["episode"].Count() < 2)
+
+
+
+
+                    destinationFile = String.Format
+                    ("{0}{1}\\{2}\\Season {3}\\{4} S{5}E{6}{7}{8}",
+                    drive_space_letter, "TV",
+                    myTI.ToTitleCase(video_dict["title"]),
+                    seasonFolderNumber,
+                    myTI.ToTitleCase(video_dict["title"]),
+                    video_dict["season"],
+                    myTI.ToTitleCase(video_dict["episode"]),
+                    ".",
+                    video_dict["container"]);
+
+                    bool file_path_mv = file_exists(destinationFile, drive_inforation);
+
+                if (file_path_mv is true)
+                {
+                    try
+                    {
+                        long old_file_length = new FileInfo(destinationFile).Length;
+                        long new_file_length = new FileInfo(sourceFile).Length;
+                        if (old_file_length > new_file_length)
                         {
-                            video_dict["episode"] = string.Format("{0}{1}", 0, video_dict["episode"]);
+                            File.Delete(sourceFile);
+                            BeginInvoke((MethodInvoker)delegate
+                            {
+
+                                dataGridView2.Rows.Insert
+                       (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
+                                        myTI.ToTitleCase(video_dict["title"]),
+                                        "File Already Exists, File Removed" });
+                            });
                         }
-                        if (video_dict["season"].Count() < 2)
+                        else
                         {
-                            video_dict["season"] = string.Format("{0}{1}", 0, video_dict["season"]);
-                        }
-
-
-                       
-
-                        
-                        
-
-                    
-                        destinationFile = String.Format
-                        ("{0}\\{1}\\Season {2}\\{3} S{4}E{5}{6}{7}",
-                        "TV",
-                        myTI.ToTitleCase(video_dict["title"]),
-                        seasonFolderNumber,
-                        myTI.ToTitleCase(video_dict["title"]),
-                        video_dict["season"],
-                        myTI.ToTitleCase(video_dict["episode"]),
-                        ".", 
-                        video_dict["container"]);
-
-                        bool file_path = file_exists(destinationFile, drive_inforation);
-                        
-
-                        if (file_path is true)
-                        {
-
                             try
                             {
-                                File.Delete(sourceFile);
-                            }
-                            catch (System.IO.DirectoryNotFoundException)
-                            {
-                                return;
-                            }
+                                File.Delete(destinationFile);
+                                MoveFile(sourceFile, destinationFile);
 
+                            }
                             catch (System.IO.IOException)
                             {
                                 return;
                             }
-
                             BeginInvoke((MethodInvoker)delegate
                             {
                                 //dataGridView2.Update();
                                 //dataGridView2.Refresh();
                                 dataGridView2.Rows.Insert
-                                (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
-                                String.Format("{0} S{1}E{2}",
+                    (0, new string[] {DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
                                 myTI.ToTitleCase(video_dict["title"]),
-                                video_dict["season"],
-                                video_dict["episode"]),
-                                "File already exists, file removed" });
-
+                                string.Format("Better Quality {0}{1}", drive_space_letter, destinationFile) });
                             });
 
+                            //add_data(DateTime.Now.ToString("h:mm:ss tt"),
+                            //myTI.ToTitleCase(video_dict["title"]),
+                            //destinationFile);
 
-                                //add_data(DateTime.Now.ToString("h:mm:ss tt"),
-                                //String.Format("{0} S{1}E{2}",
-                                //myTI.ToTitleCase(video_dict["title"]),
-                                //video_dict["season"],
-                                //video_dict["episode"]),
-                                //"File Already Exists, File Removed");
+                        }
                     }
-                    else
-                    {   
-                        try{
-                        MoveFile(sourceFile, string.Format("{0}{1}", drive_space_letter, destinationFile));
-
-
+                    catch (System.IO.DirectoryNotFoundException)
+                    {
+                        return;
                     }
-                            catch(System.IO.IOException)
-                            {
-                                return;
-                            }
-                            Console.WriteLine("Moved File");
-                            BeginInvoke((MethodInvoker)delegate
-                            {
-                                //dataGridView2.Update();
-                                //dataGridView2.Refresh();
-                                dataGridView2.Rows.Insert
-                               (0, new string[] { DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
-                                   String.Format("{0} S{1}E{2}",
-                                   myTI.ToTitleCase(video_dict["title"]),
-                                   video_dict["season"],
-                                   video_dict["episode"]),
-                                   string.Format("{0}{1}", drive_space_letter, destinationFile) });
-                            });
+                    catch (System.IO.IOException)
+                    {
 
-
-                                //add_data(DateTime.Now.ToString("h:mm:ss tt"), String.Format("{0} S{1}E{2}",
-                                //myTI.ToTitleCase(video_dict["title"]),
-                                //video_dict["season"],
-                                //video_dict["episode"]),
-                                //destinationFile);
-
+                        return;
+                    }
                 }
 
+                else
+                {
+                    MoveFile(sourceFile, destinationFile);
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        //dataGridView2.Update();
+                        //dataGridView2.Refresh();
+                        dataGridView2.Rows.Insert
+            (0, new string[] {DateTime.Now.ToString("dd/MM/yyyy hh:mm tt"),
+                                myTI.ToTitleCase(video_dict["title"]),
+                                string.Format("{0}{1}", drive_space_letter, destinationFile) });
+                    });
+                }
+
+
+
+
+
+
+               
+
+                
             }
         }
 
@@ -425,7 +453,7 @@ namespace Torrent_Sorter
 
             foreach (DriveInfo drive in drive_info)
             {
-                string file_path = string.Format("{0}{1}", drive.RootDirectory, directory);
+                string file_path = string.Format(directory);
                 if (File.Exists(file_path) == true)
                 {
                     file_exists = true;
